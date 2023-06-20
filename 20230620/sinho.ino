@@ -20,7 +20,8 @@ const float ratio = 360. / 103. / 52.;
 
 // P control
 float Kp = 30;
-float targetDeg = 500;
+
+int mission_flag = -1;
 
 void doEncoderA() {
   // 엔코더 A의 인터럽트 핸들러
@@ -33,8 +34,6 @@ void doEncoderB() {
   // 엔코더 B의 변경에 따라 엔코더 포지션 값을 증가 또는 감소
   encoderPos += (digitalRead(encoderPinA) == digitalRead(encoderPinB)) ? -1 : 1;
 }
-
-int mission_flag = -1;
 
 float UltrasonicSensorData[SONAR_NUM];
 NewPing sonar[SONAR_NUM] = {
