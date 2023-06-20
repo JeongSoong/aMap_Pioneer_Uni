@@ -100,7 +100,7 @@ void wallfollowing(void) {
   steering_control(steer_angle);
 }
 
-void cross_road() {
+void cross_obs() {
   // 교차로 횡단 기능
   read_ultrasonic_sensor();
 
@@ -166,7 +166,7 @@ void loop() {
     }
   }
   if (mission_flag == 1) {
-    cross_road();
+    cross_obs();
     if (encoderPos >= 10000) {
       motor_control(1, 0);
     }
