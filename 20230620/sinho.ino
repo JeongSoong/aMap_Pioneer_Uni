@@ -144,7 +144,7 @@ void setup()
   Steeringservo.attach(RC_SERVO_PIN);
   Steeringservo.write(NEURAL_ANGLE);
 
-  motor_control(1, 200);  // 초기 속도를 150으로 설정
+  motor_control(1, 200);  // 초기 속도를 200으로 설정
 
   mission_flag = 0;
 }
