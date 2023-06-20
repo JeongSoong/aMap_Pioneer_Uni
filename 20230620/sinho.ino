@@ -16,10 +16,6 @@ const int encoderPinA = 2;
 const int encoderPinB = 3;
 
 int encoderPos = 0;
-const float ratio = 360. / 103. / 52.;
-
-// P control
-float Kp = 30;
 
 void doEncoderA() 
 {
