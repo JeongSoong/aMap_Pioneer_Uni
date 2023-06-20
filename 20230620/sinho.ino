@@ -16,20 +16,28 @@ const int encoderPinA = 2;
 const int encoderPinB = 3;
 
 int encoderPos = 0;
-const float ratio = 360./103./52.;
+const float ratio = 360. / 103. / 52.;
 
 // P control
 float Kp = 30;
 float targetDeg = 500;
 
-void doEncoderA(){  encoderPos += (digitalRead(encoderPinA)==digitalRead(encoderPinB))?1:-1;}
-void doEncoderB(){  encoderPos += (digitalRead(encoderPinA)==digitalRead(encoderPinB))?-1:1;}
+void doEncoderA() {
+  // 엔코더 A의 인터럽트 핸들러
+  // 엔코더 A의 변경에 따라 엔코더 포지션 값을 증가 또는 감소
+  encoderPos += (digitalRead(encoderPinA) == digitalRead(encoderPinB)) ? 1 : -1;
+}
 
-int mission_flag=-1;
+void doEncoderB() {
+  // 엔코더 B의 인터럽트 핸들러
+  // 엔코더 B의 변경에 따라 엔코더 포지션 값을 증가 또는 감소
+  encoderPos += (digitalRead(encoderPinA) == digitalRead(encoderPinB)) ? -1 : 1;
+}
+
+int mission_flag = -1;
 
 float UltrasonicSensorData[SONAR_NUM];
-NewPing sonar[SONAR_NUM] = 
-{
+NewPing sonar[SONAR_NUM] = {
   NewPing(52, 53, MAX_DISTANCE),
   NewPing(50, 51, MAX_DISTANCE),
   NewPing(48, 49, MAX_DISTANCE)
@@ -38,43 +46,36 @@ NewPing sonar[SONAR_NUM] =
 Servo Steeringservo;
 int Steering_Angle = NEURAL_ANGLE;
 
-void read_ultrasonic_sensor() 
-{
+void read_ultrasonic_sensor() {
+  // 초음파 센서로부터 거리 데이터를 읽어옴
   UltrasonicSensorData[0] = sonar[0].ping_cm();
   UltrasonicSensorData[1] = sonar[1].ping_cm();
   UltrasonicSensorData[2] = sonar[2].ping_cm();
 }
 
-void send_sonar_sensor_data() 
-{
+void send_sonar_sensor_data() {
+  // 거리 데이터를 시리얼 모니터로 전송
   int i;
-  for (i = 0; i < SONAR_NUM; i++) 
-  {
+  for (i = 0; i < SONAR_NUM; i++) {
     Serial.print(UltrasonicSensorData[i]);
     Serial.print(" ");
   }
   Serial.println();
 }
 
-void steering_control(int steer_angle) 
-{
+void steering_control(int steer_angle) {
+  // 스티어링 서보 모터를 조종하여 조향각 설정
   Steeringservo.write(NEURAL_ANGLE + steer_angle);
 }
 
-void doMotor(bool dir, int vel)
-{
-  digitalWrite(MOTOR_DIR, dir);
-  analogWrite(MOTOR_PWM, dir?(255 - vel):vel);
-}
-
-void motor_control(int direction, int speed) 
-{
+void motor_control(int direction, int speed) {
+  // DC 모터 제어 함수
   digitalWrite(MOTOR_DIR, direction);
   analogWrite(MOTOR_PWM, speed);
 }
 
-void wallfollowing(void)
-{
+void wallfollowing(void) {
+  // 벽 따라가기 기능
   read_ultrasonic_sensor();
 
   // 가장 왼쪽에 위치한 센서는 인덱스 0으로 가정
@@ -89,12 +90,10 @@ void wallfollowing(void)
   // 거리 차이에 따라 스티어 각도 설정
   int steer_angle = 0;  // 스티어 각도 초기화
 
-  if (distance_difference > 0) 
-  {
+  if (distance_difference > 0) {
     // 거리 차이가 양수인 경우, 왼쪽으로 스티어
     steer_angle = LEFT_STEER_ANGLE;
-  } else if (distance_difference < 0) 
-  {
+  } else if (distance_difference < 0) {
     // 거리 차이가 음수인 경우, 오른쪽으로 스티어
     steer_angle = RIGHT_STEER_ANGLE;
   }
@@ -102,17 +101,16 @@ void wallfollowing(void)
   steering_control(steer_angle);
 }
 
-void cross_road() 
-{
+void cross_road() {
+  // 교차로 횡단 기능
   read_ultrasonic_sensor();
-  
+
   int steer_angle = 0;
   bool move_forward = true;
 
-  while (UltrasonicSensorData[1] < 30) 
-  {
+  while (UltrasonicSensorData[1] < 30) {
     motor_control(1, 100);
-    steer_angle = RIGHT_STEER_ANGLE + 40;
+    steering_control(40);
     steering_control(steer_angle);
     read_ultrasonic_sensor();
   }
@@ -130,54 +128,48 @@ void setup() {
 
   pinMode(encoderPinA, INPUT_PULLUP);
   attachInterrupt(0, doEncoderA, CHANGE);
- 
+
   pinMode(encoderPinB, INPUT_PULLUP);
   attachInterrupt(1, doEncoderB, CHANGE);
 
   Steeringservo.attach(RC_SERVO_PIN);
   Steeringservo.write(NEURAL_ANGLE);
 
-  
   motor_control(1, 200);  // 초기 속도를 150으로 설정
 
   mission_flag = 0;
 }
 
-void loop() 
-{
-  float motorDeg = float(encoderPos)*ratio;
- 
+void loop() {
+  float motorDeg = float(encoderPos) * ratio;
+
   float error = targetDeg - motorDeg;
-  float control = Kp*error;
-  
-  read_ultrasonic_sensor();  
+  float control = Kp * error;
+
+  read_ultrasonic_sensor();
 
   Serial.print("encoderPos : ");
   Serial.print(encoderPos);
   Serial.print("   motorDeg : ");
-  Serial.print(float(encoderPos)*ratio);
+  Serial.print(float(encoderPos) * ratio);
   Serial.print("   error : ");
-    Serial.print(error);
+  Serial.print(error);
   Serial.print("    control : ");
   Serial.println(control);
-  
-  if(mission_flag == 0)
-  {
+
+  if (mission_flag == 0) {
     wallfollowing();
-    if(UltrasonicSensorData[1]<=80)
-    {
-      motor_control(1,0);
+    if (UltrasonicSensorData[1] <= 80) {
+      motor_control(1, 0);
       delay(500);
       mission_flag = 1;
       encoderPos = 0;
     }
   }
-  if(mission_flag == 1)
-  {
+  if (mission_flag == 1) {
     cross_road();
-    if(encoderPos>=10000)
-    {
-      motor_control(1,0);
+    if (encoderPos >= 10000) {
+      motor_control(1, 0);
     }
   }
 }
